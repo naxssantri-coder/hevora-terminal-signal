@@ -1,0 +1,36 @@
+name: Investigate XAUUSD Price Desync (URGENT)
+
+# Manual-only, temporary investigation workflow (scripts/investigate-xau-price-desync.ts) for the
+# 2026-09-04 user bug report: a XAUUSD signal (entry 4445.10-4447.30, TP1 4430.30) reportedly had
+# price visibly cross TP1 on the TradingView chart while status stayed "Berjalan" (Running), plus a
+# general header/ticker-vs-TradingView-chart desync complaint. Pulls real current production state
+# via GitHub Actions since this sandbox cannot reach Render directly - same pattern as
+# audit-xau-stuck-signal.yml/verify-xau-production.yml.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  investigate-xau-price-desync:
+    name: Search matching signal + cross-check every XAUUSD price source
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run price-desync investigation
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: npm run investigate:xau-price-desync

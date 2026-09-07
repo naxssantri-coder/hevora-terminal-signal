@@ -1,0 +1,51 @@
+name: Live Desk Audio Canary (real production)
+
+# Manual-only controller for the REAL OpenRouter audio-to-text pipeline on the actual production
+# server (this sandbox cannot reach it or openrouter.ai directly - see verify-live-intel-target.yml
+# for the reachability check this depends on). Talks to the same HEV_SERVER_BASE_URL/
+# ADMIN_USERNAME/ADMIN_PASSWORD secrets live-intel-watcher.yml already uses.
+#
+# `action` defaults to the read-only "status" - always safe to run, changes nothing. "enable" and
+# "disable" actually flip production's persisted settings.enabled (a REAL, cost-incurring toggle -
+# see scripts/live-desk-audio-canary.ts's own pre-flight checks before it will ever enable
+# anything). Never runs on a schedule - this must be a deliberate, explicit trigger every time.
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'status (read-only, default) | enable | disable'
+        required: true
+        default: 'status'
+        type: choice
+        options:
+          - status
+          - enable
+          - disable
+
+permissions:
+  contents: read
+
+jobs:
+  live-desk-audio-canary:
+    name: Check/toggle the real Live Desk audio pipeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run canary
+        env:
+          HEV_SERVER_BASE_URL: ${{ secrets.HEV_SERVER_BASE_URL }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          CANARY_ACTION: ${{ github.event.inputs.action }}
+        run: npm run live-desk-audio-canary

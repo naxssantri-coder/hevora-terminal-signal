@@ -1,0 +1,62 @@
+name: Check Production Deploy Version
+
+# One-off manual check (2026-09-02): the sandbox this project is developed in cannot reach the
+# production Render URL at all (egress proxy blocks it - same documented restriction as
+# gold-api.com/Yahoo/Binance), so there is no way from there to confirm Render has actually
+# finished deploying a given commit. GitHub's runners have real internet access, so this is the
+# place to check.
+#
+# Hits the existing public /api/deploy-info endpoint (server.ts) for the RENDER_GIT_COMMIT Render
+# itself stamps on every deploy, and separately fetches / to pull out the built JS bundle
+# filenames so a manual visual diff is possible even if RENDER_GIT_COMMIT is ever unset. No
+# secrets, no repo writes - pure read-only curl.
+on:
+  workflow_dispatch:
+    inputs:
+      production_url:
+        description: 'Production base URL to check'
+        required: false
+        default: 'https://hevora-terminal-signal-production-2.onrender.com'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  check-deploy-version:
+    name: Query /api/deploy-info and index.html asset refs
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Query /api/deploy-info
+        run: |
+          URL="${{ inputs.production_url }}"
+          echo "Checking: $URL/api/deploy-info"
+          curl -sS -w '\nHTTP_STATUS:%{http_code}\n' "$URL/api/deploy-info" || echo "curl failed"
+
+      - name: Fetch index.html and list built asset refs
+        run: |
+          URL="${{ inputs.production_url }}"
+          echo "Checking: $URL/"
+          curl -sS "$URL/" -o /tmp/index.html -w '\nHTTP_STATUS:%{http_code}\n'
+          echo "--- script/link tags ---"
+          grep -oE '(src|href)="[^"]*"' /tmp/index.html || true
+
+      - name: Fetch the main JS bundle and search for watchlist-sidebar markers
+        run: |
+          URL="${{ inputs.production_url }}"
+          MAIN_JS=$(grep -oE '/assets/index-[A-Za-z0-9_-]*\.js' /tmp/index.html | head -1)
+          echo "Main bundle: $MAIN_JS"
+          if [ -n "$MAIN_JS" ]; then
+            curl -sS "$URL$MAIN_JS" -o /tmp/main.js -w '\nHTTP_STATUS:%{http_code}\n'
+            echo "bundle size bytes: $(wc -c < /tmp/main.js)"
+          fi
+          MARKETS_JS=$(grep -oE '/assets/MarketsPage-[A-Za-z0-9_-]*\.js' /tmp/index.html | head -1)
+          echo "MarketsPage chunk (lazy-loaded, may not be in index.html - that's fine): $MARKETS_JS"
+          if [ -n "$MARKETS_JS" ]; then
+            curl -sS "$URL$MARKETS_JS" -o /tmp/markets.js -w '\nHTTP_STATUS:%{http_code}\n'
+            echo "MarketsPage chunk size bytes: $(wc -c < /tmp/markets.js)"
+            echo "--- grep for watchlist markers in MarketsPage chunk ---"
+            grep -o "hev_watchlist" /tmp/markets.js | head -3 || echo "hev_watchlist: NOT FOUND"
+            grep -o "DAFTAR WATCHLIST" /tmp/markets.js | head -3 || echo "'DAFTAR WATCHLIST': NOT FOUND"
+          fi

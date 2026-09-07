@@ -1,0 +1,32 @@
+name: Audit AI Validation Follow-up (correction)
+
+# Follow-up to audit-ai-integrations.yml (2026-09-04): corrects a bug in that script's own [C]
+# section (it assumed SignalHistoryRecord carries analysisReasoning - it doesn't - and silently
+# mislabeled every "no match" as "[real AI response]"). Uses only fields that actually exist:
+# analysisReasoning on currently-active /api/signals, and aiNarrative (which IS persisted) across
+# XAUUSD's full stored history as a real success-rate proxy.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  audit-ai-validation-followup:
+    name: Correct AI-validation evidence using fields that actually exist
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run AI validation follow-up
+        run: npm run audit:ai-validation-followup

@@ -1,0 +1,68 @@
+name: Keep-Alive Ping (Render Free Tier Stopgap)
+
+# Task 6 of the 2026-08-29 XAUUSD audit: Render's free tier spins the service down completely
+# after a period of inactivity (confirmed via the user's own production logs - the "will spin
+# down with inactivity" banner + SIGTERM/fresh-boot restart pairs a few minutes apart). While the
+# service is down, NOTHING runs - including recordPriceTick/buildXauCandleFromTicks (Task 1's
+# self-built XAUUSD candle builder) - so a spin-down window becomes a real gap in candleStore.XAUUSD,
+# not just a delay, and directly undermines the ~150-bar continuous history Tasks 1-4 depend on.
+#
+# This is an EXPLICIT STOPGAP, not a fix: pinging a lightweight public endpoint often enough that
+# the service never sits idle long enough to spin down keeps it warm, but does NOT eliminate the
+# risk entirely (a deploy/restart still has its own brief downtime window, and Render's own
+# inactivity timer behavior isn't something this workflow controls). The user has been told
+# directly that the only way to remove this risk completely is upgrading off the free tier to an
+# always-on plan - that is a monthly-cost decision only the user can make, not something this
+# workflow substitutes for. See CLAUDE.md / Task 6 of the audit for the full writeup.
+#
+# Hits /api/prices - a PUBLIC, lightweight, in-memory-only endpoint (no external fetch, no admin
+# auth) - purely to keep the process warm. No repository secrets needed. Every 10 minutes, per the
+# user's explicit choice of interval (comfortably under Render's own spin-down window).
+#
+# Known limitation: GitHub disables scheduled workflows automatically after 60 days with no
+# commits to the repository - if this repo goes quiet for 2 months, this stopgap silently stops
+# running and needs a manual re-enable (Actions tab) or a new commit to reset the clock.
+#
+# CONFIRMED 2026-08-29 (candle-freeze-after-restart investigation): this stopgap is currently NOT
+# reliably protecting the service. Checked via mcp__github__actions_list on this exact workflow -
+# only 2 total runs recorded in the ~5.5h since merge (one manual workflow_dispatch at merge time,
+# one `schedule` run ~5h later) vs the ~33 a genuine 10-minute cadence would produce. This is NOT a
+# bug in this YAML: a completely separate, previously-reliable cron in this same repo
+# (live-intel-watcher.yml, */15min, 470+ prior on-schedule runs at roughly its configured cadence)
+# also went silent over the same window (no `schedule` run between 2026-08-29T10:22Z and at least
+# 2026-08-29T14:01Z - 3.6h+ with zero firings), while workflow_dispatch (manual) runs on both
+# workflows kept succeeding instantly throughout. Two independent crons on this repo stalling
+# together while manual dispatch stays healthy points at a GitHub Actions platform-side scheduling
+# reliability issue for this repository/account, not something fixable from workflow YAML or
+# server.ts. Net effect on XAUUSD: whenever GH's scheduler goes quiet like this, this ping stops,
+# Render's free-tier instance spins down, and candleStore.XAUUSD correctly goes stale until the
+# service is next woken by any real HTTP request - the self-built candle builder itself was
+# verified (via scripts/verify-xau-production.ts) to resume normal ~5min candles immediately once
+# ticks resume, so this is a pure availability gap, not a candle-builder bug. If this recurs, an
+# external uptime pinger (e.g. UptimeRobot/cron-job.org hitting /api/prices) is a more dependable
+# stopgap than a GitHub Actions schedule for this specific job - worth the user's consideration
+# alongside the always-on-plan option already noted above.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Ping production /api/prices to prevent free-tier spin-down
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping
+        run: |
+          URL="${HEV_PRODUCTION_URL:-https://hevora-terminal-signal-production-2.onrender.com}/api/prices"
+          echo "Pinging $URL"
+          # -f -> non-2xx is a real failure (worth seeing in the Actions tab); -m 45 -> generous
+          # timeout since a cold-starting free-tier instance can take 50s+ to answer its first
+          # request after a spin-down (this ping IS that wake-up call in that case).
+          curl -sS -f -m 45 -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" "$URL"
+        env:
+          HEV_PRODUCTION_URL: ${{ vars.HEV_PRODUCTION_URL }}

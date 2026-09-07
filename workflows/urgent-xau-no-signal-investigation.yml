@@ -1,0 +1,35 @@
+name: URGENT XAUUSD No-Signal Investigation
+
+# 2026-09-04 URGENT: user reported 3 screenshots (spanning ~3 hours) all showing XAUUSD
+# "NO VALID SETUP" with identical text, right after Fase A/B/C rollout. Pulls real current
+# production state via GitHub Actions since this sandbox cannot reach Render directly - same
+# pattern as audit-xau-stuck-signal.yml. Needs ADMIN_USERNAME/ADMIN_PASSWORD (same secrets already
+# used by other admin-gated audit workflows in this repo) for the one admin endpoint.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  urgent-xau-no-signal-investigation:
+    name: Pull real current XAUUSD signal/gate/staleness state
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run investigation
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: npm run urgent:xau-no-signal-investigation

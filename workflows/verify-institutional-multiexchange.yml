@@ -1,0 +1,48 @@
+name: Verify Institutional Watchlist Multi-Exchange Data
+
+# Manual-only live production check (scripts/verify-institutional-multiexchange.ts) for the
+# Institutional Watchlist full-page task: confirms with REAL numbers from the deployed service -
+# not sandbox simulation, since this sandbox's egress to the production Render URL and to every
+# exchange it talks to is confirmed blocked - whether:
+#   - Part B's bug fix (BNB/XRP/ADA/DOGE now branch into real crypto-derivatives data instead of
+#     falling through to the COT/forex section) actually works against OKX's real instruments.
+#   - Part C's newly-added Gate.io and Bitget exchange rows are genuinely answering in production
+#     (as opposed to being geo-blocked the same way Binance already is).
+#   - Part E (market cap history) and Part G (futures history, derived from Part C's own data) are
+#     populated.
+#
+# Every endpoint this script calls is PUBLIC (no admin auth, no repository secrets required) -
+# same production endpoints a real visitor's browser already fetches when opening a crypto pair's
+# Institutional Watchlist detail page.
+on:
+  workflow_dispatch:
+    inputs:
+      production_url:
+        description: 'Override the production base URL (defaults to the known production URL baked into the script)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify-institutional-multiexchange:
+    name: Query production exchange-ranking/derivatives/market-cap-history/futures-history endpoints
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Verify production multi-exchange crypto data
+        env:
+          HEV_PRODUCTION_URL: ${{ inputs.production_url }}
+        run: npm run verify:institutional-multiexchange

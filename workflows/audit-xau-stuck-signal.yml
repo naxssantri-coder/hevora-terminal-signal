@@ -1,0 +1,36 @@
+name: Audit XAUUSD Stuck Signal (URGENT)
+
+# Manual-only, temporary investigation workflow (scripts/audit-xau-stuck-signal.ts) for the
+# 2026-08-31 URGENT bug report: a XAUUSD signal reportedly hit Stop Loss on the user's real
+# MetaTrader account but HEVORA Terminal's status hasn't updated. Pulls real current production
+# state via GitHub Actions since this sandbox cannot reach Render directly - same pattern as
+# audit-data-health.yml. Needs ADMIN_USERNAME/ADMIN_PASSWORD (same secrets already used by other
+# admin-gated audit workflows in this repo) for the one admin endpoint; the rest are public.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  audit-xau-stuck-signal:
+    name: Pull real current XAUUSD signal state + candle history
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run stuck-signal investigation
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: npm run audit:xau-stuck-signal

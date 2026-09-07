@@ -1,0 +1,41 @@
+name: Audit XAUUSD HTF Bias Archive Depth
+
+# Manual-only investigation workflow (scripts/audit-xau-htf-bias-gate.ts) for the 2026-09-03 HTF
+# bias & directional gate redesign: confirms with REAL production data exactly how many real days
+# XAU_CANDLE_ARCHIVE_KEY (hevora:candlearchive:XAUUSD:5m) currently holds, i.e. whether the new D1
+# bias tier (XAU_D1_MIN_REAL_DAYS = 7 in server.ts) is mature enough to activate yet. Runs via
+# GitHub Actions since this sandbox cannot reach the production Render URL directly, same pattern
+# as audit-xau-candle-gaps.yml/audit-xau-history-summary.yml. Public endpoint only
+# (/api/market/xau-archive), no secrets needed.
+on:
+  workflow_dispatch:
+    inputs:
+      production_url:
+        description: 'Override the production base URL (defaults to the known production URL baked into the script)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  audit-xau-htf-bias-gate:
+    name: Check real XAUUSD candle archive depth (D1 bias tier readiness)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Audit XAUUSD candle archive depth
+        env:
+          HEV_PRODUCTION_URL: ${{ inputs.production_url }}
+        run: npm run audit:xau-htf-bias-gate

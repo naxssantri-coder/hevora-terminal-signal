@@ -1,0 +1,46 @@
+name: Backtest XAUUSD HTF Bias & Directional Gate
+
+# Manual-only walk-forward backtest for the 2026-09-03 HTF bias & directional gate redesign
+# (scripts/backtest-xau-engine.ts --htf-gate-audit). Same reason as backtest-xau.yml: this
+# sandbox's egress to Yahoo Finance is blocked, so this only ever runs against real historical
+# XAUUSD/GC=F candles on GitHub's own runners.
+#
+# This isolates the HTF-bias/directional-gate mechanism specifically: OLD gate (informational-only
+# 8h-window H1 bias, -18 penalty never a hard filter, sweep/range excluded from the HTF gate
+# entirely) vs NEW gate (genuine H4/D1 bias, hard filter for TREND_CONTINUATION/CHOCH_REVERSAL,
+# two-mode sweep, H4-ranging-confirmed range) on the SAME real 5-minute candles and real daily
+# candles (fetched live in this run, up to 60 real days of 5-minute bars and 2 real years of daily
+# bars - Yahoo's own documented ceilings for those intervals). Prints signal frequency,
+# counter-trend percentage, and win-rate/avgR split by aligned-vs-opposed-HTF for every pattern, for
+# both gate modes, to the job log - read the log for the numbers, this is a reporting run only.
+on:
+  workflow_dispatch:
+    inputs:
+      extra_args:
+        description: 'Extra CLI flags appended to the backtest command (e.g. --breakout-opportunity-gap for the Fase 4 Task 0 audit)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  backtest-xau-htf-gate:
+    name: Run OLD vs NEW XAUUSD HTF bias/directional gate comparison on real candles
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run OLD vs NEW HTF bias/directional gate backtest on real XAUUSD/GC=F candles
+        run: npx tsx scripts/backtest-xau-engine.ts --htf-gate-audit ${{ inputs.extra_args }}

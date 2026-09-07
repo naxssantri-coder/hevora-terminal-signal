@@ -1,0 +1,33 @@
+name: Probe Kalshi FedWatch Replacement
+
+# Manual-only investigation workflow (scripts/probe-kalshi-fedwatch.ts) for the "Probabilitas Rapat
+# Berikutnya" CME FedWatch -> Kalshi replacement: checks that the free, public, no-auth Kalshi
+# market-data API actually has an open KXFED event for the next FOMC meeting, and prints the real
+# field shapes before anything gets wired into server.ts. This sandbox's egress to
+# api.elections.kalshi.com is blocked, so this runs via GitHub Actions - same established workaround
+# used elsewhere in this project. No secrets required (all endpoints are public, no API key).
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  probe-kalshi-fedwatch:
+    name: Check Kalshi KXFED open events/markets
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Probe Kalshi FedWatch replacement
+        run: npm run probe:kalshi-fedwatch

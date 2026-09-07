@@ -1,0 +1,63 @@
+name: Verify HEVAI Ask-AI Answer Content (real production)
+
+# One-off manual check (2026-09-06 Live Desk final audit, item 4): LIVE_DESK_STATUS.md's last
+# open row for the HEVAI widget was "payload confirmed carries liveDeskContext, but the ANSWER
+# CONTENT itself was never checked against a real GEMINI_API_KEY - sandbox has none, endpoint
+# honestly returns {answer: null, error: 'GEMINI_API_KEY belum dikonfigurasi...'}". POST
+# /api/ai/ask has NO admin auth (see server.ts - it's the public-facing chat widget endpoint, only
+# IP-rate-limited), so unlike the audio canary this needs no ADMIN_USERNAME/PASSWORD secret - just
+# real network access to production, which only a GitHub Actions runner has from this project.
+#
+# Sends exactly ONE real question, with a realistic liveDeskContext payload (the same shape
+# LiveDeskView.tsx pushes into ShellContext - see LiveDeskAiContext in src/types.ts), and prints
+# the raw response so a human/agent can read the actual generated answer text, not just its shape.
+on:
+  workflow_dispatch:
+    inputs:
+      production_url:
+        description: 'Production base URL to check'
+        required: false
+        default: 'https://hevora-terminal-signal-production-2.onrender.com'
+        type: string
+      question:
+        description: 'Question to send to /api/ai/ask'
+        required: false
+        default: 'Berdasarkan konteks Live Desk ini, apa dampaknya ke XAUUSD?'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  ask-ai-live-check:
+    name: POST a real question to /api/ai/ask with liveDeskContext
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: POST /api/ai/ask
+        run: |
+          URL="${{ inputs.production_url }}"
+          Q="${{ inputs.question }}"
+          BODY=$(cat <<JSON
+          {
+            "question": "$Q",
+            "liveDeskContext": {
+              "focusEventTitle": "Federal Reserve - Rapat Kebijakan Moneter (contoh audit)",
+              "focusEventSummary": "Fed mempertahankan suku bunga, nada hawkish soal inflasi.",
+              "focusEventTone": "Hawkish",
+              "focusEventVerdict": "Bullish",
+              "topics": ["Rate Policy", "Inflation"],
+              "narrativeHotTopics": ["Rate Policy"],
+              "impactRows": [{ "label": "XAUUSD", "direction": "Bullish", "confidence": 70 }]
+            }
+          }
+          JSON
+          )
+          echo "Request body:"
+          echo "$BODY"
+          echo ""
+          echo "--- Response ---"
+          curl -sS -X POST "$URL/api/ai/ask" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
+            -w '\nHTTP_STATUS:%{http_code}\n'

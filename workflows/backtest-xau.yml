@@ -1,0 +1,66 @@
+name: Backtest XAUUSD Signal Engine
+
+# Manual-only walk-forward backtest for the XAUUSD signal engine (scripts/backtest-xau-engine.ts).
+#
+# Why this exists: the sandbox this project is developed in cannot reach Yahoo Finance (the same
+# "CONNECT tunnel failed, 403" egress restriction documented in verify-sources.yml and
+# verify-feeds.yml), so the OLD-vs-NEW engine comparison and the fase-2 soft-SL/hard-SL
+# close-confirmation comparison can only ever be run against real historical candles from here,
+# on GitHub's runners (which have normal internet access).
+#
+# This is a reporting run, not a pass/fail gate: it prints signal frequency, SL-width
+# distribution, win-rate/expectancy for both engines, and the fase-2 shakeout-rescue /
+# confirmed-breakdown loss-depth numbers to the job log. There is nothing here to turn the check
+# red or green - read the log for the numbers. No repository secrets required (Yahoo's chart API
+# is public).
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backtest-xau:
+    name: Run OLD vs NEW vs fase-2 soft/hard SL backtest on real XAUUSD candles
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run exit-scenario sanity checks (soft-SL-survive / soft-SL-close-confirm / hard-SL-instant)
+        run: npx tsx scripts/backtest-xau-engine.ts --test-exit-scenarios
+
+      - name: Run XAUUSD signal-status staleness/decoupled-freshness sanity checks
+        run: npx tsx scripts/test-xauusd-signal-status.ts
+
+      - name: Run backtest against real XAUUSD candles
+        env:
+          # Optional. When set (repo secret), the backtest fetches from Twelve Data (5min bars)
+          # instead of the Yahoo XAUUSD=X/GC=F fallback chain, purely because Twelve Data serves
+          # real 5-minute bars directly (Yahoo's XAUUSD=X spot symbol is confirmed permanently
+          # delisted, so the fallback chain lands on GC=F futures/1-minute bars instead - see
+          # fetchRealXauCandles's own comment). This is a backtest-data-quality choice only; the
+          # live server (server.ts) never calls Twelve Data at all - XAUUSD candles there are
+          # self-built from gold-api.com/Yahoo ticks (buildXauCandleFromTicks), free forever, no
+          # API key, no rate limit (2026-09-01: the live server's own dormant Twelve Data candle
+          # backstop was removed entirely, not just left disabled).
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+        run: npm run backtest:xau
+
+      - name: Check GC=F vs real spot XAUUSD basis (investigation only, no source switch)
+        run: npm run check:xau-basis
+
+      - name: Probe alternative XAUUSD OHLC candle data sources (investigation only)
+        run: npm run probe:xau-sources
+
+      - name: Probe Yahoo XAUUSD=X vs XAU=X vs GC=F - permanent vs transient 404 (investigation only)
+        run: npx tsx scripts/probe-yahoo-xau-symbols.ts

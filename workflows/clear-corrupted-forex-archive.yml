@@ -1,0 +1,36 @@
+name: Clear Corrupted Forex Archive
+
+# One-time cleanup (scripts/clear-corrupted-forex-archive.ts) - see that script's own comment for
+# full context. Manual-only (workflow_dispatch), needs ADMIN_USERNAME/ADMIN_PASSWORD (same secrets
+# audit-data-health.yml/live-intel-watcher.yml already use) since the target endpoint is
+# requireAdminAuth-gated. This sandbox cannot reach the production Render URL directly, so this
+# only ever runs via GitHub Actions - same established workaround as every other investigation/
+# maintenance script in this repo.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  clear-corrupted-forex-archive:
+    name: Clear the 4 corrupted forex candle archive keys
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Clear corrupted forex archive
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: npm run clear:corrupted-forex-archive

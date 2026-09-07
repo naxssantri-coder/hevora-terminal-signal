@@ -1,0 +1,41 @@
+name: Audit XAUUSD Candle Gaps
+
+# Manual-only investigation workflow (scripts/audit-xau-candle-gaps.ts) for Bagian G of the
+# 2026-09-01 chart+RR engine follow-up: verifies with REAL production data whether
+# candleStore.XAUUSD's time series has gaps wider than one bar duration (the user's own
+# screenshot-based hypothesis - a quiet tick feed slot never gets a candle at all) before deciding
+# on the whitespace-data rendering fix. Runs via GitHub Actions since this sandbox cannot reach the
+# production Render URL directly, same pattern as the other production-audit workflows here.
+# Public endpoint only (/api/market/xau-intraday), no secrets needed.
+on:
+  workflow_dispatch:
+    inputs:
+      production_url:
+        description: 'Override the production base URL (defaults to the known production URL baked into the script)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  audit-xau-candle-gaps:
+    name: Scan live /api/market/xau-intraday for time gaps between candles
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Audit XAUUSD candle gaps
+        env:
+          HEV_PRODUCTION_URL: ${{ inputs.production_url }}
+        run: npm run audit:xau-candle-gaps

@@ -1,0 +1,41 @@
+name: Verify Live Intel Target (HEV_SERVER_BASE_URL)
+
+# Manual-only reachability check (scripts/verify-live-intel-target.ts) for the 2026-08-31 news-
+# pipeline audit: live-intel-watcher.yml and delete-live-event.yml both publish to whatever
+# HEV_SERVER_BASE_URL currently points at. The leading hypothesis for "news stopped updating" is
+# that this secret was never updated after a (now-dropped) home-server migration attempt and still
+# points at a dead Cloudflare Quick Tunnel URL from that experiment, instead of the Render URL this
+# project now exclusively deploys to - which would make every scheduled watcher run fail silently
+# (no user-visible error, since nothing surfaces a failed scheduled Action run to the terminal UI).
+#
+# Same sandbox-cannot-reach-Render restriction as verify-xau-production.yml - this only runs for
+# real on GitHub's own runners. Never prints the secret's literal value or full URL, only a
+# redacted hostname plus the HTTP result of one read-only GET to the public /api/prices endpoint -
+# see the script's own header comment for the full rationale.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live-intel-target:
+    name: Check HEV_SERVER_BASE_URL reachability
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Check HEV_SERVER_BASE_URL reachability (redacted)
+        env:
+          HEV_SERVER_BASE_URL: ${{ secrets.HEV_SERVER_BASE_URL }}
+        run: npm run verify:live-intel-target

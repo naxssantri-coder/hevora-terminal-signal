@@ -1,0 +1,35 @@
+name: Audit Crypto Market Heatmap (CoinGecko raw data)
+
+# Manual-only investigation workflow (scripts/audit-crypto-market-heatmap.ts) for the CoinGlass
+# parity task's Bagian C2: CryptoMarketHeatmap.tsx showed a single "USDC $5.0T" box dominating the
+# top-30 volume heatmap. server.ts's /api/crypto/market-heatmap mapping and the frontend's use of
+# volume24hUsd both read correct on code inspection - this pulls CoinGecko's raw /coins/markets
+# response directly to settle whether that number is genuine upstream data or something our code is
+# doing to it. This sandbox has no egress to api.coingecko.com (confirmed, same block as every
+# other external feed in this project), so this runs on GitHub's own runners instead - same
+# established workaround used by backtest-xau.yml and friends.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  audit-crypto-market-heatmap:
+    name: Fetch CoinGecko top-30-by-volume coins, print raw stablecoin rows
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Fetch and print raw CoinGecko market data
+        run: npm run audit:crypto-market-heatmap

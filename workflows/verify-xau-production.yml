@@ -1,0 +1,56 @@
+name: Verify XAUUSD Production Deployment
+
+# Manual-only live production check (scripts/verify-xau-production.ts) for Task 5 of the
+# 2026-08-29 XAUUSD audit: confirms with REAL numbers from the deployed service - not sandbox
+# simulation - whether the Task 1-4 changes (self-built candles, genuine HTF gate, MAIN/SCALP
+# tiering) are actually behaving as intended in production.
+#
+# Why this exists: the sandbox this project is developed in cannot reach the production Render
+# URL (`curl` gets "CONNECT tunnel failed, response 403" from the org's egress proxy - confirmed,
+# same restriction already documented for gold-api.com/Yahoo/Binance on this project), so
+# GitHub's runners (real internet access) are the only place this can actually be checked, same
+# established workaround as backtest-xau.yml/verify-feeds.yml.
+#
+# Every endpoint this script calls is PUBLIC (no admin auth, no repository secrets required):
+# /api/market/candles, /api/signals, /api/history?pairId=XAUUSD - exactly what a real visitor's
+# browser already fetches. Also cross-checks the live /api/signals.prices.XAUUSD price against
+# independent gold-api.com/Yahoo Finance quotes fetched from this same runner (2026-08-31 4-point
+# audit, point 3: "harga di header beda dari TradingView") - TradingView itself has no public quote
+# API, so this is the closest verifiable proxy available.
+#
+# This is a reporting run, not a pass/fail gate: candleCount being below 150 shortly after a
+# deploy is EXPECTED (the self-built candle history needs ~12.5h to fill from cold-start), not a
+# failure - the script itself prints a verdict distinguishing "still warming up" from "genuinely
+# stuck/gapped" based on elapsed time since the Task 1-4 deploy. Read the job log for the numbers.
+on:
+  workflow_dispatch:
+    inputs:
+      production_url:
+        description: 'Override the production base URL (defaults to the known production URL baked into the script)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify-xau-production:
+    name: Query production XAUUSD candle/signal/history endpoints
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Verify production XAUUSD candle store, current signal, and history
+        env:
+          HEV_PRODUCTION_URL: ${{ inputs.production_url }}
+        run: npm run verify:xau-production

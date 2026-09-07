@@ -1,0 +1,35 @@
+name: Check Forex Archive Status
+
+# Manual-only investigation workflow (scripts/check-forex-archive-status.ts) for a Bagian J
+# follow-up (2026-09-01): the user asked for the REAL, current candle count in the permanent forex
+# archive (EUR/USD, USD/CHF, USD/CAD, GBP/USD) since the real-bars-only fix shipped (commit
+# 6a9742c), to decide whether it's safe to migrate those pairs' charts onto LightweightChart now.
+# This sandbox cannot reach the production Render URL directly (confirmed repeatedly on this
+# project - see keep-alive-xau.yml's own comment for the same limitation), so this runs via GitHub
+# Actions - same established workaround used elsewhere in this project. No secrets required
+# (/api/market/forex-archive is a public, unauthenticated GET endpoint).
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check-forex-archive-status:
+    name: Query real forex archive candle counts from production
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Check forex archive status
+        run: npm run check:forex-archive-status

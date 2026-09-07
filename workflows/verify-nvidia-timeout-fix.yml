@@ -1,0 +1,42 @@
+name: Verify NVIDIA Timeout Fix (post-deploy)
+
+# Post-deploy verification (2026-09-04) for the validateSignalWithAI() timeout fix - real evidence
+# that the fix produced a genuine result in production, not just a claim it "should work now".
+# Checks /api/admin/nvidia-ai-health (real attempt/success/failure counts + latency samples, the
+# new instrumentation this fix adds), the current XAUUSD signal's aiNarrative/counterEvidence, and
+# the most recent XAUUSD history record - each compared against FIX_DEPLOYED_AT (the fix's real
+# processStartedAt from /api/deploy-info) so a pre-fix signal is never mistaken for evidence.
+on:
+  workflow_dispatch:
+    inputs:
+      fix_deployed_at:
+        description: 'The fix deploy processStartedAt (ISO timestamp from /api/deploy-info) - used to tell a pre-fix signal apart from a post-fix one'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify-nvidia-timeout-fix:
+    name: Check real NVIDIA call stats + a post-fix XAUUSD signal's aiNarrative
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run verification
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          FIX_DEPLOYED_AT: ${{ inputs.fix_deployed_at }}
+        run: npm run verify:nvidia-timeout-fix

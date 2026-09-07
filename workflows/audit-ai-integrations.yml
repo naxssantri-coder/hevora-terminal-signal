@@ -1,0 +1,37 @@
+name: Audit AI Integrations & Data Sources (comprehensive)
+
+# Manual-only, comprehensive audit (scripts/audit-ai-integrations.ts) for the 2026-09-04 user
+# request: for every AI integration and data source this project claims to use, check REAL
+# production evidence of whether it is genuinely being called and succeeding right now - not just
+# present in the code. Complements audit-data-health.yml (which covers the ~18-provider market data
+# board) with the AI-specific side: Gemini macro narrative, NVIDIA self-evaluation insights, per-
+# signal AI validation text across pairs, News Watcher live-events output, and a real HEVAI test
+# call. Runs on GitHub Actions since this sandbox cannot reach the production Render URL directly.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  audit-ai-integrations:
+    name: Check real evidence for every AI integration + data source
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run AI-integration audit
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: npm run audit:ai-integrations

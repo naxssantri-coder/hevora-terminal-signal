@@ -1,0 +1,36 @@
+name: Check Forex Reliability Stats
+
+# Manual-only investigation workflow (scripts/check-forex-reliability-stats.ts) for Bagian J Tugas
+# 3's 4-hour Yahoo-forex-reliability measurement window (2026-09-01) - reads the admin-gated
+# /api/admin/forex-reliability-stats endpoint (server.ts) to check progress or get the final
+# report. Needs ADMIN_USERNAME/ADMIN_PASSWORD (same secrets audit-data-health.yml/
+# live-intel-watcher.yml already use). This sandbox cannot reach the production Render URL
+# directly, so this only ever runs via GitHub Actions.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check-forex-reliability-stats:
+    name: Read the live forex Yahoo-fetch reliability counters from production
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Check forex reliability stats
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: npm run check:forex-reliability-stats

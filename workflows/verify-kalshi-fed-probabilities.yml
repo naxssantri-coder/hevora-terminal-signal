@@ -1,0 +1,33 @@
+name: Verify Kalshi Fed Probabilities Parsing
+
+# Manual verification (scripts/verify-kalshi-fed-probabilities.ts) that the parsing/probability
+# logic embedded in server.ts's fetchKalshiFedProbabilities() produces correct, sane output
+# against Kalshi's real live API - picks the right next FOMC meeting, maps real field names, and
+# the resulting probability distribution is well-formed. This sandbox's egress to
+# api.elections.kalshi.com is blocked, so this runs via GitHub Actions. No secrets required (all
+# endpoints are public, no API key).
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-kalshi-fed-probabilities:
+    name: Verify Kalshi KXFED parsing against live data
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Verify Kalshi Fed probabilities parsing
+        run: npm run verify:kalshi-fed-probabilities

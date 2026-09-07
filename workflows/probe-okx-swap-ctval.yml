@@ -1,0 +1,30 @@
+name: Probe OKX SWAP Contract Values
+
+# One-off manual probe (scripts/probe-okx-swap-ctval.ts) for OKX's real per-instrument ctVal on
+# the 7 USDT-margined SWAP instruments the liquidation feature tracks - needed to convert the
+# OKX liquidation-orders channel's `sz` (contracts) into real USD notional without guessing.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  probe-okx-swap-ctval:
+    name: Fetch OKX SWAP instrument contract values
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Probe OKX SWAP contract values
+        run: npx tsx scripts/probe-okx-swap-ctval.ts

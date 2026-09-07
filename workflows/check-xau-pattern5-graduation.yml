@@ -1,0 +1,36 @@
+name: Check XAU Pattern 5 Graduation Status
+
+# Fase M (roadmap Bagian 2, PROMPT MASTER): read-only status check (scripts/check-xau-pattern5-graduation.ts).
+# Reports whether Pattern 5's (BREAKOUT_DISPLACEMENT_CONTINUATION) shadow-mode sample size/win-rate/avgR
+# clear the bar to recommend graduating XAU_PATTERN5_LIVE_PUBLISH to true - never flips the flag itself.
+# Needs ADMIN_USERNAME/ADMIN_PASSWORD (same secrets audit-data-health.yml/clear-corrupted-forex-archive.yml
+# already use) since the target endpoint is requireAdminAuth-gated. This sandbox cannot reach the
+# production Render URL directly, so this only ever runs via GitHub Actions.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check-pattern5-graduation:
+    name: Report Pattern 5 shadow-mode sample size / win-rate / avgR
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Check Pattern 5 graduation status
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: npm run check:xau-pattern5-graduation

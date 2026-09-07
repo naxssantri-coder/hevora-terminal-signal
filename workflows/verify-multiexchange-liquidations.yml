@@ -1,0 +1,35 @@
+name: Verify Multi-Exchange Liquidation Feeds
+
+# Manual-only reachability + real-event check for every candidate exchange's public liquidation
+# feed (scripts/verify-multiexchange-liquidations.ts), backing Round 4 Bagian C's requirement
+# that each new exchange relay pass its own independent verification (real connection + real
+# events + sane-looking numbers) BEFORE being counted in /api/crypto/liquidations's `source`.
+#
+# Runs OKX, Bitget, Gate.io, Deribit, BitMEX, HTX, CoinEx and Binance concurrently for ~4 minutes
+# each. This sandbox has no egress to any of these hosts (see CLAUDE.md) - this workflow is the
+# only way to get a real answer, not a guess from training-data recall of each exchange's docs.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-multiexchange-liquidations:
+    name: Connect + subscribe to every candidate exchange's public liquidation feed
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Verify multi-exchange liquidation feeds
+        run: npm run verify:multiexchange-liquidations

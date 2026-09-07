@@ -1,0 +1,37 @@
+name: URGENT XAUUSD Volatility Gate Directional Investigation
+
+# 2026-09-04 URGENT (2nd incident same day): user reports only 4 XAUUSD signals fired today
+# despite a large dump (~4472->4368) followed by a fast rally back to ~4432 - exactly the kind of
+# big directional move the original roadmap said must never be missed. Reconstructs the real
+# Volatility Regime Gate on/off state, tick-by-tick, against real production candles (this sandbox
+# cannot reach Render directly, same GitHub-Actions-run pattern as every other audit/urgent
+# workflow in this repo). Needs ADMIN_USERNAME/ADMIN_PASSWORD (same secrets already used by other
+# admin-gated audit workflows) for the one admin endpoint call.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  urgent-xau-volgate-directional-investigation:
+    name: Reconstruct real Volatility Regime Gate timeline vs today's price action
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run investigation
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: npm run urgent:xau-volgate-directional-investigation

@@ -1,0 +1,36 @@
+name: Verify COT Breakdown Sources (Commercial / TFF)
+
+# Manual-only investigation workflow (scripts/verify-cot-breakdown-sources.ts) for the 2026-09-02
+# COT Heat Scan redesign: checks (1) whether Commercial long/short is already present on the
+# Legacy CFTC Socrata dataset server.ts already fetches, and (2) discovers and probes the real
+# CFTC "Traders in Financial Futures" (TFF) and "Disaggregated" Socrata resources for real field
+# names - "Leveraged Funds"/"Dealer" are TFF-report terminology, not something the Legacy dataset
+# could ever expose under any name, so this must be checked against real data before anything is
+# wired into server.ts. This sandbox's egress to CFTC's Socrata endpoint is blocked, so this runs
+# via GitHub Actions - same established workaround as verify-sources.yml. No secrets required
+# (every endpoint probed is public).
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-cot-breakdown-sources:
+    name: Probe Commercial fields + discover TFF/Disaggregated CFTC datasets
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Verify COT breakdown sources
+        run: npm run verify:cot-breakdown-sources

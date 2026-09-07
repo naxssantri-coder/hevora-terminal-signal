@@ -1,0 +1,42 @@
+name: Verify Bybit Liquidation WebSocket
+
+# Manual-only reachability check for Bybit's public `allLiquidation.{symbol}` WebSocket topic
+# (scripts/verify-bybit-liquidation-ws.ts), backing server.ts's Bybit liquidation relay and
+# /api/crypto/liquidations.
+#
+# Why this exists: server.ts already records (see fetchBinanceCryptoData's header comment, and
+# verify-sources.ts's 'Crypto derivatives' group) that Bybit's plain REST endpoints return
+# HTTP 403 both from Render AND from a prior CI-verified run - a broader block than one hosting
+# region. A WebSocket upgrade is a different connection path and is not assumed to fail the same
+# way without actually trying it - this workflow is that real try, so the liquidation feature's
+# feasibility is a measured fact, not a guess, before it is called done or not done.
+#
+# Exit behaviour: the script exits 0 only if the socket opened AND Bybit acknowledged the
+# subscribe request within ~25s - the strongest signal obtainable without waiting for an actual
+# liquidation event (sporadic, not guaranteed in any short window). A red run here means the
+# connection path itself is blocked from wherever this ran, not just the REST API.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-bybit-liquidation-ws:
+    name: Open + subscribe to Bybit's public liquidation WebSocket
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Verify Bybit liquidation WebSocket
+        run: npm run verify:bybit-liquidation-ws

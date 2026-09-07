@@ -1,0 +1,34 @@
+name: Audit XAUUSD SCALP Entry Timing
+
+# Manual-only, temporary investigation workflow (scripts/audit-xau-scalp-entry.ts) for the
+# 2026-08-31 "audit entry timing & indicators for XAUUSD SCALP" task, FASE 1 (report only, no
+# code changes to entry/confirmation logic). Pulls today's real XAUUSD signal outcomes and checks
+# the "stopped out then market continued toward TP" pattern against real candle history - via
+# GitHub Actions since this sandbox cannot reach Render directly, same pattern as
+# audit-data-health.yml. Public endpoints only (/api/history, /api/market/candles) - no secrets
+# needed.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  audit-xau-scalp-entry:
+    name: Pull real XAUUSD history + candles, check SL-then-reversal pattern
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run XAUUSD SCALP entry-timing audit
+        run: npm run audit:xau-scalp-entry

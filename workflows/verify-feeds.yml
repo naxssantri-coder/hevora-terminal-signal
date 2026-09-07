@@ -1,0 +1,63 @@
+name: Verify RSS Feeds
+
+# Manual-only check for every RSS source in scripts/live-intel-watcher.config.ts.
+#
+# Why this exists: the sandbox this project is developed in cannot reach any of those feed
+# domains (the egress proxy answers "CONNECT tunnel failed, 403" for all of them), so the feed
+# URLs in that config were found via web search and could never be opened and confirmed as real
+# XML from there. GitHub's runners DO have normal internet access, so this workflow is the place
+# to actually prove them.
+#
+# It runs `npm run verify:feeds` (scripts/verify-feeds.ts), which fetches every RSS source with
+# the same rss-parser the watcher itself uses and prints, per source:
+#     status | enabled | category | source id | item count | newest item date | newest title
+#
+# Exit behaviour - this is what makes the Actions tab go red or green:
+#   - ANY source with `enabled: true` whose feed fails to fetch/parse, returns zero items, or
+#     returns items with no parseable date  -> script exits 1 -> this job FAILS (red).
+#   - Sources that are already `enabled: false` are still checked and reported, but never fail
+#     the run - they are explicitly the "known unconfirmed, left off" pile.
+# So a green run means "every feed currently switched on is genuinely alive right now", and a red
+# run names exactly which enabled source to turn off or fix.
+#
+# Deliberately NO `schedule:` trigger - this is a check you run when you want an answer, not
+# something that should burn Actions minutes on its own. Also needs NO repository secrets: it
+# only reads public feeds and never contacts the HEV server, the admin API, or Gemini.
+on:
+  workflow_dispatch: {}
+
+# Read-only: this workflow never writes to the repo, opens PRs, or touches releases.
+permissions:
+  contents: read
+
+jobs:
+  verify-feeds:
+    name: Fetch and parse every configured RSS feed
+    runs-on: ubuntu-latest
+    # Each feed gets a 20s parser timeout and rss-parser is called sequentially, so even a dozen
+    # sources with several timing out stays well inside this. A run that somehow exceeds it is a
+    # real problem worth failing on rather than waiting out.
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        # Same reason as the watcher workflow: this project uses Bun (bun.lock), not npm, so
+        # actions/setup-node's npm-only cache option has no package-lock.json to find here.
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        # Not --frozen-lockfile, matching live-intel-watcher.yml - the committed bun.lock can sit
+        # slightly behind package.json, and a frozen install would fail the run for a reason that
+        # has nothing to do with feed health, which is the one thing this workflow exists to
+        # report on.
+        run: bun install
+
+      - name: Verify feeds
+        # The npm script runs scripts/verify-feeds.ts via tsx. Its non-zero exit on any failing
+        # ENABLED source is what fails this job - no extra shell logic needed, and no `|| true`
+        # anywhere, which would silently turn a broken feed into a green check.
+        run: npm run verify:feeds

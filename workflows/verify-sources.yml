@@ -1,0 +1,61 @@
+name: Verify Data Sources
+
+# Manual-only availability check for every candidate data source in the Fase 8 audit
+# (docs/FASE-8-AUDIT.md), run by scripts/verify-sources.ts.
+#
+# Why this exists: the coverage percentages in that audit are knowledge-based, not measured. The
+# sandbox this project is developed in cannot reach any external data provider - the same
+# constraint verify-feeds.yml already documents for RSS. GitHub's runners have normal internet
+# access, so this workflow is where "Yahoo probably serves CL=F" turns into a fact.
+#
+# For every source it performs the real request the app would make and validates the SHAPE of the
+# response, not just the status code - a provider answering HTTP 200 with an error page, an empty
+# array, or a renamed field is reported as FAIL, because that is exactly what would ship as a
+# broken panel.
+#
+# Exit behaviour:
+#   - A probe marked `critical` in the script failing -> exit 1 -> this job goes red. That set is
+#     small on purpose: the Yahoo control, WTI and Wheat futures (which gate the entire
+#     Commodities build), and Bybit funding (which gates crypto derivatives).
+#   - Non-critical failures are printed in full but do not fail the run - they are information for
+#     deciding what to build, not breakage.
+#   - Sources needing a free API key that is not configured are reported SKIP with the signup
+#     link, never as a false failure.
+#
+# Secrets: none required. FRED_API_KEY and EIA_API_KEY are optional - without them those probes
+# report SKIP instead of running. Add them as repository secrets to widen the check.
+on:
+  workflow_dispatch: {}
+
+# Read-only: never writes to the repo, contacts the HEV server, or calls any AI provider.
+permissions:
+  contents: read
+
+jobs:
+  verify-sources:
+    name: Probe every candidate data source
+    runs-on: ubuntu-latest
+    # Probes run 6 at a time with a 20s timeout each, so ~35 probes finish in well under a minute
+    # even with several timing out. Anything beyond this ceiling is a real problem, not slowness.
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        # Not --frozen-lockfile, matching the other two workflows - the committed bun.lock can sit
+        # behind package.json, and a frozen install would fail this run for a reason unrelated to
+        # source availability, which is the only thing this workflow reports on.
+        run: bun install
+
+      - name: Probe data sources
+        env:
+          # Optional. Present -> the FRED probes actually run; absent -> they report SKIP.
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+        run: npm run verify:sources

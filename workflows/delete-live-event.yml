@@ -1,0 +1,138 @@
+name: Delete Live Event
+
+# One-off maintenance action: remove a stale event from the live-events store on the PRODUCTION
+# server, without touching a terminal.
+#
+# This exists because the admin "Live Intel" tab was removed, so there is no UI left to delete an
+# event - but the server endpoints are all still there. This runs scripts/delete-live-event.ts,
+# which only calls endpoints that already exist (GET /api/live-events to find matches, DELETE
+# /api/admin/live-events/:id to remove them). No new server surface, no new credentials.
+#
+# HOW IT PROTECTS YOU - three layers, because this permanently deletes records and there is no undo:
+#   1. The dry run ALWAYS runs first and prints every entry that matches, in full, before anything
+#      is deleted. If the match is wrong you see it there and nothing has happened yet.
+#   2. Deleting only happens when the `confirm` input is exactly the word DELETE. Anything else -
+#      empty, lowercase "delete", a typo, leftover text - stops the run after the dry run.
+#   3. The `match` input is a substring, so a too-broad term shows up as several entries in the
+#      dry-run list. Read that list before re-running with confirm.
+#
+# Stopping at the dry run is a SUCCESS, not a failure - the job stays green. A red job here means
+# something actually went wrong (server unreachable, bad credentials, a delete that failed), not
+# that you declined to confirm.
+#
+# Uses the same three secrets live-intel-watcher.yml already uses. Nothing new to configure.
+on:
+  workflow_dispatch:
+    inputs:
+      match:
+        description: 'Text to search for in an event title / speaker / source (case-insensitive substring). Example: Kevin Warsh'
+        required: true
+        type: string
+      confirm:
+        description: 'Type DELETE (all caps) to actually delete. Anything else = dry run only.'
+        required: true
+        type: string
+        default: ''
+
+# Read-only against the repo. The only writes this performs are to the live-events store on the
+# app server, via its own authenticated admin endpoint.
+permissions:
+  contents: read
+
+jobs:
+  delete-live-event:
+    name: Find and delete a live event
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        # Same as the other workflows here: this project uses Bun (bun.lock), so setup-node's
+        # npm-only cache has no package-lock.json to find.
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        # Not --frozen-lockfile, matching the other workflows - bun.lock can lag package.json, and
+        # failing here for that reason would have nothing to do with the task at hand.
+        run: bun install
+
+      - name: Show what was requested
+        # Inputs are passed through env, never interpolated straight into the shell command.
+        # workflow_dispatch inputs are attacker-controllable by anyone who can run the workflow,
+        # and "${{ inputs.x }}" pasted inline would be expanded by the runner BEFORE bash sees it -
+        # a value containing quotes or a semicolon would then run as shell. Via env it is just data.
+        env:
+          MATCH: ${{ inputs.match }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          echo "match:   '$MATCH'"
+          echo "confirm: '$CONFIRM'"
+          echo ""
+          if [ "$CONFIRM" = "DELETE" ]; then
+            echo "confirm is exactly DELETE -> the dry run below will be followed by a REAL deletion."
+          else
+            echo "confirm is NOT exactly DELETE -> this run will stop after the dry run and delete nothing."
+          fi
+
+      - name: Dry run (always - deletes nothing)
+        # No --yes, so scripts/delete-live-event.ts lists matches and exits without deleting.
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          HEV_SERVER_BASE_URL: ${{ secrets.HEV_SERVER_BASE_URL }}
+          MATCH: ${{ inputs.match }}
+        run: |
+          echo "=============================================================="
+          echo " DRY RUN - listing what WOULD be deleted. Nothing is removed."
+          echo "=============================================================="
+          echo ""
+          bun run delete:live-event -- --match="$MATCH"
+
+      - name: Stop here (not confirmed)
+        if: inputs.confirm != 'DELETE'
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          echo "=============================================================="
+          echo " STOPPED AFTER DRY RUN - nothing was deleted."
+          echo "=============================================================="
+          echo ""
+          echo "The confirm input was '$CONFIRM', which is not exactly DELETE."
+          echo ""
+          echo "If the list above is what you want gone, run this workflow again with the same"
+          echo "match value and confirm set to DELETE (all caps, no spaces)."
+          echo ""
+          echo "This job is green on purpose: declining to confirm is a normal outcome, not an error."
+
+      - name: Delete for real
+        if: inputs.confirm == 'DELETE'
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          HEV_SERVER_BASE_URL: ${{ secrets.HEV_SERVER_BASE_URL }}
+          MATCH: ${{ inputs.match }}
+        run: |
+          echo "=============================================================="
+          echo " CONFIRMED - deleting the entries listed above. No undo."
+          echo "=============================================================="
+          echo ""
+          bun run delete:live-event -- --match="$MATCH" --yes
+
+      - name: Show the store afterwards
+        if: inputs.confirm == 'DELETE'
+        # Re-reads the same public endpoint so the log ends with proof of the final state - what
+        # survived, not just what was removed.
+        env:
+          HEV_SERVER_BASE_URL: ${{ secrets.HEV_SERVER_BASE_URL }}
+        run: |
+          echo ""
+          echo "=============================================================="
+          echo " Live events remaining after the delete"
+          echo "=============================================================="
+          curl -sS "${HEV_SERVER_BASE_URL%/}/api/live-events?limit=50" \
+            | jq -r '.events[] | "  [\(.type)] \(.title)"' \
+            || echo "  (could not re-read the store - the delete result above is still authoritative)"

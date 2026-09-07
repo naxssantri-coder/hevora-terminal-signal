@@ -1,0 +1,37 @@
+name: Audit Data Health (Broad Sweep)
+
+# Manual-only, temporary investigation workflow (scripts/audit-data-health.ts) for the 2026-08-31
+# "news still stuck post-upgrade + broad audit" task. Pulls the app's own /api/admin/data-health
+# aggregate provider board (already built in, ~18 rows covering Yahoo/OKX/Bybit/FRED/CFTC/
+# DefiLlama/Fear&Greed/CoinGecko/EIA/WGC), plus /api/calendar and /api/live-events freshness, into
+# one real snapshot - same egress-block workaround as verify-xau-production.yml (this sandbox
+# cannot reach Render directly). Needs ADMIN_USERNAME/ADMIN_PASSWORD (same secrets
+# live-intel-watcher.yml already uses) for the one admin-gated endpoint.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  audit-data-health:
+    name: Snapshot provider health board + calendar/news freshness
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run broad data-health audit
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: npm run audit:data-health

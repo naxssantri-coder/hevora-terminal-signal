@@ -1,0 +1,30 @@
+name: Audit Crypto ETF Data Sources
+
+# Pre-implementation audit for Part H (Crypto ETF Overview) - this sandbox cannot reach
+# farside.co.uk or Yahoo Finance directly, so this runs on GitHub's own runners (real internet)
+# instead, same established workaround as every other audit-*/verify-*.ts script in this repo.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-etf-sources:
+    name: Query Farside Investors + Yahoo Finance for real Bitcoin ETF data
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Audit ETF data sources
+        run: npm run audit:etf-sources

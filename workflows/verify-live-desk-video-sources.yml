@@ -1,0 +1,49 @@
+name: Verify Live Desk Video Sources
+
+# Manual-only real-internet check for scripts/verify-live-desk-video-sources.ts.
+#
+# Why this exists: a user reported Live Desk's "Live Sekarang" DW News embed rendering a
+# broken-image icon instead of video. The sandbox this project is developed in cannot reach
+# youtube.com at all (the egress proxy answers "CONNECT tunnel failed, 403" for the whole
+# domain), so an earlier session's claim that the embed was "verified working" only ever checked
+# the iframe's `src` attribute in the DOM - never whether that URL actually resolves to a real,
+# playable YouTube player. This workflow runs on GitHub's own runners (real internet) and answers
+# that for real, for:
+#   - every channel in src/data/liveDeskVideoChannels.ts (the 7 free 24/7 news embeds)
+#   - every 'youtube-channel' source in scripts/live-intel-watcher.config.ts (Fed, ECB, BOJ... -
+#     confirms each handle still resolves to a real channel with the expected identity)
+#
+# Deliberately never fails the run just because a 24/7 channel happens to be off-air at the exact
+# moment this runs - that is real, useful information (and exactly the failure mode Live Desk
+# needs to show a clear message for), not a bug in this workflow. Read the job log/table.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live-desk-video-sources:
+    name: Probe every Live Desk YouTube channel with yt-dlp + a real embed fetch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Install yt-dlp
+        # Same install step live-intel-watcher.yml already uses - kept identical on purpose so a
+        # yt-dlp version difference is never the reason this workflow's answer differs from
+        # production's.
+        run: pip install --quiet --upgrade yt-dlp
+
+      - name: Verify Live Desk video sources
+        run: npm run verify:live-desk-video-sources

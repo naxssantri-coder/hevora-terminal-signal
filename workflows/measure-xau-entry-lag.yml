@@ -1,0 +1,43 @@
+name: Measure XAUUSD Entry-Timing Lag
+
+# Manual-only, read-only diagnostic (scripts/backtest-xau-engine.ts --measure-entry-lag) for
+# Bagian E task 1 of the 2026-09-01 chart+RR engine follow-up: measures how much TIME elapses
+# between a TREND_CONTINUATION/CHOCH_REVERSAL signal's structural origin (the swing point its own
+# BOS/CHoCH broke past) and the moment it actually clears the real confluence gate and fires -
+# using the exact same newEvaluateMarketStructureFromCandles walk-forward every other real-data
+# check in this repo already runs. This is a MEASUREMENT ONLY - it changes no threshold, and per
+# this project's standing rule, any change to WHEN/AT WHAT PRICE a signal actually publishes stops
+# for the user's explicit decision before merging, never goes further on its own.
+#
+# Runs via GitHub Actions because this sandbox's egress to Yahoo Finance is blocked (the same
+# restriction documented in backtest-xau.yml) - GitHub's runners have normal internet access.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  measure-entry-lag:
+    name: Measure real TREND_CONTINUATION/CHOCH_REVERSAL entry-timing lag (diagnostic only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Measure entry-timing lag against real XAUUSD candles
+        env:
+          # Optional - see backtest-xau.yml's own comment on this same variable. Purely a
+          # backtest-data-quality choice (real 5-minute bars vs the Yahoo GC=F 1-minute fallback);
+          # the live server never calls Twelve Data.
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+        run: npm run measure:xau-entry-lag

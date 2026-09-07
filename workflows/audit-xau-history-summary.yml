@@ -1,0 +1,39 @@
+name: Audit XAUUSD Production History Summary
+
+# Manual-only, temporary investigation workflow (scripts/audit-xau-history-summary.ts) for Bagian E
+# Task 2 of the 2026-09-01 chart+RR engine audit: pulls the REAL production /api/history/summary
+# numbers for XAUUSD (win rate, Direct-SL rate, TP1-then-SL rate) - via GitHub Actions since this
+# sandbox cannot reach the production Render URL directly, same pattern as
+# verify-xau-production.yml/backtest-xau.yml. Public endpoint only, no secrets needed.
+on:
+  workflow_dispatch:
+    inputs:
+      production_url:
+        description: 'Override the production base URL (defaults to the known production URL baked into the script)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  audit-xau-history-summary:
+    name: Pull real /api/history/summary numbers for XAUUSD (week + month)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Audit XAUUSD production history summary
+        env:
+          HEV_PRODUCTION_URL: ${{ inputs.production_url }}
+        run: npm run audit:xau-history-summary

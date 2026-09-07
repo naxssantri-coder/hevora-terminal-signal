@@ -1,0 +1,102 @@
+name: Live Intel Watcher
+
+# Runs the Live Intelligence watcher (scripts/live-intel-watcher.ts --once) on a schedule instead
+# of it staying resident on a paid server. Each run: polls every enabled source in
+# scripts/live-intel-watcher.config.ts exactly once, sends anything relevant to AI autofill,
+# auto-publishes Medium/High impact events, then exits. Free on GitHub's public-repo Actions
+# minutes (and well within the free monthly minutes even on a private repo, at ~96 short runs/day
+# for the common case where nothing is actively live - see the timeout-minutes note below for the
+# one case that isn't quick).
+#
+# Requires 3 repository secrets (Settings -> Secrets and variables -> Actions -> "New repository
+# secret"): ADMIN_USERNAME, ADMIN_PASSWORD, HEV_SERVER_BASE_URL. Nothing is hardcoded here - see
+# the "env:" block below, which only ever references ${{ secrets.* }}.
+on:
+  schedule:
+    - cron: '*/15 * * * *' # every 15 minutes, UTC (GitHub may delay this slightly under load)
+  workflow_dispatch: {} # lets you trigger a run manually from the Actions tab, for testing
+
+# If a run takes longer than 15 minutes - either unexpectedly, or ON PURPOSE because it's in the
+# middle of the semi-real-time YouTube Live loop (see timeout-minutes above) - don't start an
+# overlapping one on top of it: queue behind it instead, so two runs never touch the same dedup
+# state file (or append to the same live event) at once. The next scheduled trigger just starts
+# the moment the in-progress one finishes.
+concurrency:
+  group: live-intel-watcher
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run-watcher:
+    runs-on: ubuntu-latest
+    # Was 10 - bumped to fit scripts/live-intel-watcher.ts's semi-real-time YouTube Live loop
+    # (LIVE_LOOP_MAX_MS in live-intel-watcher.config.ts, currently 3 hours): once a
+    # 'youtube-live-captions' source is enabled AND confirmed actually live, this single run stays
+    # open polling captions every ~20-30s for as long as the stream lasts (up to that 3-hour cap)
+    # instead of exiting immediately, so it needs enough job budget to not get killed mid-session.
+    # The COMMON case (nothing live right now, or no YouTube source enabled at all) is unaffected -
+    # every source poll still finishes in seconds and the job exits immediately either way; this
+    # higher ceiling only actually gets used during a genuine live stream, which is exactly when
+    # it's needed. On a private repo this DOES mean an active live session consumes real Actions
+    # minutes proportional to how long the stream runs (unlike every other run, which stays cheap).
+    timeout-minutes: 195
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        # This project uses Bun (bun.lock), not npm - actions/setup-node's npm-only cache option
+        # can't find a package-lock.json here and fails the run before anything else even starts.
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        # Not --frozen-lockfile: the committed bun.lock is currently a bit behind package.json
+        # (a few deps added in earlier work were never re-locked via `bun install`), so a frozen
+        # install would fail here the same way the old npm-based step did. A plain install still
+        # uses the committed lockfile for everything it already covers and only resolves what's
+        # missing - safe, just not byte-for-byte reproducible until bun.lock is refreshed
+        # separately (out of scope for this workflow fix).
+        run: bun install
+
+      - name: Install yt-dlp
+        # Only actually used if a 'youtube-live-captions' source is enabled in
+        # live-intel-watcher.config.ts - harmless/no-op cost otherwise, and keeps this workflow
+        # working automatically if a YouTube source gets enabled later without editing this file.
+        run: pip install --quiet --upgrade yt-dlp
+
+      # The watcher's dedup state (which items/blocks were already sent) has to survive between
+      # runs, or every run would re-send everything. GitHub Actions gives each run a fresh
+      # checkout, so we persist data/live_intel_watcher_state.json in the Actions cache instead of
+      # committing it to the repo (avoids a git commit every 15 minutes forever).
+      - name: Restore dedup state from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/live_intel_watcher_state.json
+          key: live-intel-watcher-state-${{ github.run_id }}
+          restore-keys: |
+            live-intel-watcher-state-
+
+      - name: Ensure state file exists (first run only)
+        run: |
+          mkdir -p data
+          [ -f data/live_intel_watcher_state.json ] || echo '{"sentHashes":{},"rssSeenIds":{},"liveSessions":{}}' > data/live_intel_watcher_state.json
+
+      - name: Run watcher (single pass)
+        env:
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          HEV_SERVER_BASE_URL: ${{ secrets.HEV_SERVER_BASE_URL }}
+        run: bun run watch:live-intel:once
+
+      # Runs even if the watcher step above failed partway through, so whatever dedup progress it
+      # made before failing isn't lost on the next scheduled run.
+      - name: Save dedup state to cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/live_intel_watcher_state.json
+          key: live-intel-watcher-state-${{ github.run_id }}

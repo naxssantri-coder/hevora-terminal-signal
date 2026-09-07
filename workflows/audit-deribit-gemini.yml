@@ -1,0 +1,30 @@
+name: Audit Deribit Instruments and Gemini BNB Price
+
+# One-off diagnostic (scripts/audit-deribit-gemini.ts) - this sandbox cannot reach Deribit or
+# Gemini directly, so this runs on GitHub's own runners (real internet) instead, same established
+# workaround as every other verify-*/audit-*.ts script in this repo.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-deribit-gemini:
+    name: Query Deribit get_instruments and Gemini's raw BNB ticker
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Audit Deribit instruments + Gemini BNB ticker
+        run: npm run audit:deribit-gemini

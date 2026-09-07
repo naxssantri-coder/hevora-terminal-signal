@@ -1,0 +1,38 @@
+name: Verify NVIDIA Model Fix (410 Gone bug)
+
+# Manual-only, temporary investigation workflow (scripts/verify-nvidia-model-fix.ts) for the
+# 2026-08-31 "NVIDIA fallback returns 410 Gone" bug report. Calls NVIDIA's own API directly with
+# both the old (retired) unversioned model ID and the new dated one now used in server.ts, so the
+# fix is confirmed against a real HTTP response instead of an assumption - same egress-block
+# workaround as audit-data-health.yml (this sandbox cannot reach integrate.api.nvidia.com
+# directly). Needs the same NVIDIA_API_KEY value Render already uses in production.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-nvidia-model-fix:
+    name: Call NVIDIA API with old vs new model ID
+    runs-on: ubuntu-latest
+    # 5 min: each of the 3 model calls below now carries its own per-call AbortSignal.timeout
+    # (30s/45s/60s = 135s worst case) after deepseek-v4-pro-0813 was observed to hang past 6
+    # minutes with no response on one run - this ceiling is just a backstop above that sum.
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run NVIDIA model-id fix verification
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        run: npm run verify:nvidia-model-fix

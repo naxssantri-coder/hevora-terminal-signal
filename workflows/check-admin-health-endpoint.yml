@@ -1,0 +1,48 @@
+name: Check Admin Health Endpoint (real production)
+
+# One-off/reusable manual check (2026-09-06 Live Desk final audit, item 1): a generic way to GET
+# any read-only /api/admin/*-health endpoint against real production from a runner with real
+# internet access (this sandbox cannot reach it - see verify-live-intel-target.ts). Reused instead
+# of adding a new narrow workflow every time a new admin-health endpoint needs a real check - e.g.
+# /api/admin/ai-budget-health (Gemini quota usage), /api/admin/nvidia-ai-health,
+# /api/admin/engine-tick-health, /api/admin/xau-autotrade-health, all of which share the same
+# requireAdminAuth + plain-GET contract.
+on:
+  workflow_dispatch:
+    inputs:
+      production_url:
+        description: 'Production base URL to check'
+        required: false
+        default: 'https://hevora-terminal-signal-production-2.onrender.com'
+        type: string
+      path:
+        description: 'Admin health path to GET (must start with /api/admin/)'
+        required: true
+        default: '/api/admin/ai-budget-health'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  check-admin-health:
+    name: GET an admin health endpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      HEV_SERVER_BASE_URL: ${{ inputs.production_url }}
+      ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+    steps:
+      - name: Reject a non-admin path (defense in depth beyond the input description)
+        run: |
+          case "${{ inputs.path }}" in
+            /api/admin/*) ;;
+            *) echo "Refusing: path must start with /api/admin/"; exit 1 ;;
+          esac
+
+      - name: GET the path with admin basic auth
+        run: |
+          URL="$HEV_SERVER_BASE_URL${{ inputs.path }}"
+          echo "Checking: $URL"
+          curl -sS -u "$ADMIN_USERNAME:$ADMIN_PASSWORD" "$URL" -w '\nHTTP_STATUS:%{http_code}\n'

@@ -1,0 +1,32 @@
+name: Verify XAUUSD Chart Single Source
+
+# Manual-only, temporary verification workflow (scripts/verify-xau-chart-single-source.ts) for the
+# 2026-08-31 "replace the XAUUSD TradingView chart with an in-house lightweight-charts chart fed
+# by candleStore.XAUUSD" task. Confirms the new /api/market/xau-intraday endpoint really is the
+# same feed as /api/prices (the header/ticker) - via GitHub Actions since this sandbox cannot reach
+# Render directly, same pattern as audit-data-health.yml. Public endpoints only, no secrets needed.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-xau-chart-single-source:
+    name: Compare /api/prices vs /api/market/xau-intraday for XAUUSD
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run XAUUSD chart single-source verification
+        run: npm run verify:xau-chart-single-source
