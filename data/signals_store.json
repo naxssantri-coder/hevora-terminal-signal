@@ -1,0 +1,367 @@
+{
+  "XAUUSD": {
+    "id": "SIG-XAUUSD-MSDBDF44",
+    "pairId": "XAUUSD",
+    "pairName": "XAU/USD",
+    "category": "commodities",
+    "type": "BUY",
+    "timeframe": "M5 / M15",
+    "entryMin": 4028.06,
+    "entryMax": 4032.9,
+    "entryAvg": 4030.48,
+    "stopLoss": 4021.77,
+    "takeProfit1": 4043.35,
+    "takeProfit2": 4053.8,
+    "riskReward": "1:2.68",
+    "status": "Running",
+    "createdAt": "2026-08-03T14:17:57.700Z",
+    "updatedAt": "2026-08-03T14:17:57.700Z",
+    "lockedUntil": "2026-08-03T14:37:57.700Z",
+    "strategyMethod": "M15 Break of Structure (BOS) + CHoCH Expansion",
+    "analysisReasoning": "✓ Genuine Market Structure Shift (MSS) detected from M5/M15 OHLC candles.\n✓ Real-time ATR (4.84) used for dynamic risk modeling.\n✓ Price retesting Discount Order Block & Fair Value Gap (FVG).\n✓ Dynamic ATR Volatility (4.84) & RR (1:2.68) validated.",
+    "userAdvice": "Harga memasuki area entry zone. Pasang Stop Loss dan biarkan posisi berjalan sesuai rencana.",
+    "aiConfidenceScore": 80,
+    "aiQualityGrade": "B",
+    "riskGuidance": {
+      "lotSize": "Saran Lot: 0.01 - 0.14 Lot",
+      "riskRupiah": "Rp 10.000 - Rp 20.000 (1-2% risiko dari modal Rp 1.000.000)",
+      "note": "Disiplin Risk Management: Jaga risiko per trade maksimal 1-2% modal."
+    },
+    "structureBreakdown": {
+      "mss": true,
+      "bos": true,
+      "fvg": false,
+      "liquiditySweep": true,
+      "orderBlock": true,
+      "supplyDemand": true
+    },
+    "hitPrices": {},
+    "history": [
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.700Z",
+        "price": 4032.899902,
+        "note": "Signal BUY XAU/USD dipublikasikan pada area optimal entry 4028.06 - 4032.90."
+      },
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.700Z",
+        "price": 4032.899902,
+        "note": "Harga berada di area optimal entry zone. Order aktif berjalan."
+      }
+    ]
+  },
+  "BTCUSDT": {
+    "id": "SIG-BTCUSDT-MSDBDF44",
+    "pairId": "BTCUSDT",
+    "pairName": "BTC/USDT Perpetual",
+    "category": "crypto",
+    "type": "BUY",
+    "timeframe": "M5 / M15",
+    "entryMin": 63315.04,
+    "entryMax": 63416.48,
+    "entryAvg": 63365.76,
+    "stopLoss": 63077.7,
+    "takeProfit1": 63762.15,
+    "takeProfit2": 64107.82,
+    "riskReward": "1:2.58",
+    "status": "Running",
+    "createdAt": "2026-08-03T14:17:57.700Z",
+    "updatedAt": "2026-08-03T14:17:57.700Z",
+    "lockedUntil": "2026-08-03T14:37:57.700Z",
+    "strategyMethod": "M15 Break of Structure (BOS) + CHoCH Expansion",
+    "analysisReasoning": "✓ Genuine Market Structure Shift (MSS) detected from M5/M15 OHLC candles.\n✓ Real-time ATR (182.57) used for dynamic risk modeling.\n✓ Price retesting Discount Order Block & Fair Value Gap (FVG).\n✓ Dynamic ATR Volatility (182.57) & RR (1:2.58) validated.",
+    "userAdvice": "Harga memasuki area entry zone. Pasang Stop Loss dan biarkan posisi berjalan sesuai rencana.",
+    "aiConfidenceScore": 96,
+    "aiQualityGrade": "A+",
+    "riskGuidance": {
+      "lotSize": "Saran Position: Max 1-2% Margin (SL ~0.5%)",
+      "riskRupiah": "Rp 10.000 - Rp 20.000 (1-2% risiko dari modal Rp 1.000.000)",
+      "note": "Disiplin Risk Management: Jaga risiko per trade maksimal 1-2% modal."
+    },
+    "structureBreakdown": {
+      "mss": true,
+      "bos": true,
+      "fvg": true,
+      "liquiditySweep": true,
+      "orderBlock": true,
+      "supplyDemand": true
+    },
+    "hitPrices": {},
+    "history": [
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.700Z",
+        "price": 63403.8,
+        "note": "Signal BUY BTC/USDT Perpetual dipublikasikan pada area optimal entry 63315.04 - 63416.48."
+      },
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.700Z",
+        "price": 63403.8,
+        "note": "Harga berada di area optimal entry zone. Order aktif berjalan."
+      }
+    ]
+  },
+  "ETHUSDT": {
+    "id": "SIG-ETHUSDT-MSDBDF44",
+    "pairId": "ETHUSDT",
+    "pairName": "ETH/USDT Perpetual",
+    "category": "crypto",
+    "type": "SELL",
+    "timeframe": "M5 / M15",
+    "entryMin": 1856.66,
+    "entryMax": 1859.64,
+    "entryAvg": 1858.15,
+    "stopLoss": 1871.64,
+    "takeProfit1": 1840.47,
+    "takeProfit2": 1824.28,
+    "riskReward": "1:2.51",
+    "status": "Running",
+    "createdAt": "2026-08-03T14:17:57.700Z",
+    "updatedAt": "2026-08-03T14:17:57.700Z",
+    "lockedUntil": "2026-08-03T14:37:57.700Z",
+    "strategyMethod": "M5 Liquidity Sweep & Institutional Reversal",
+    "analysisReasoning": "✓ Genuine Bearish Market Structure Shift (MSS) detected from M5/M15 OHLC candles.\n✓ Real-time ATR (6.00) used for dynamic risk modeling.\n✓ Price retesting Premium Supply Zone & Order Block (OB).\n✓ Dynamic ATR Volatility (6.00) & RR (1:2.51) validated.",
+    "userAdvice": "Harga memasuki area entry zone. Pasang Stop Loss dan biarkan posisi berjalan sesuai rencana.",
+    "aiConfidenceScore": 78,
+    "aiQualityGrade": "B",
+    "riskGuidance": {
+      "lotSize": "Saran Position: Max 1-2% Margin (SL ~0.7%)",
+      "riskRupiah": "Rp 10.000 - Rp 20.000 (1-2% risiko dari modal Rp 1.000.000)",
+      "note": "Disiplin Risk Management: Jaga risiko per trade maksimal 1-2% modal."
+    },
+    "structureBreakdown": {
+      "mss": true,
+      "bos": false,
+      "fvg": false,
+      "liquiditySweep": true,
+      "orderBlock": true,
+      "supplyDemand": true
+    },
+    "hitPrices": {},
+    "history": [
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.700Z",
+        "price": 1857.04,
+        "note": "Signal SELL ETH/USDT Perpetual dipublikasikan pada area optimal entry 1856.66 - 1859.64."
+      },
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.700Z",
+        "price": 1857.04,
+        "note": "Harga berada di area optimal entry zone. Order aktif berjalan."
+      }
+    ]
+  },
+  "SOLUSDT": null,
+  "EURUSD": {
+    "id": "SIG-EURUSD-MSDBDF45",
+    "pairId": "EURUSD",
+    "pairName": "EUR/USD",
+    "category": "forex",
+    "type": "BUY",
+    "timeframe": "M5 / M15",
+    "entryMin": 1.15082,
+    "entryMax": 1.1522,
+    "entryAvg": 1.15151,
+    "stopLoss": 1.15002,
+    "takeProfit1": 1.15399,
+    "takeProfit2": 1.15578,
+    "riskReward": "1:2.87",
+    "status": "Running",
+    "createdAt": "2026-08-03T14:17:57.701Z",
+    "updatedAt": "2026-08-03T14:17:57.701Z",
+    "lockedUntil": "2026-08-03T14:37:57.701Z",
+    "strategyMethod": "M5 Fair Value Gap (FVG) Retest & Order Flow",
+    "analysisReasoning": "✓ Genuine Market Structure Shift (MSS) detected from M5/M15 OHLC candles.\n✓ Real-time ATR (0.00015) used for dynamic risk modeling.\n✓ Price retesting Discount Order Block & Fair Value Gap (FVG).\n✓ Dynamic ATR Volatility (0.00015) & RR (1:2.87) validated.",
+    "userAdvice": "Harga memasuki area entry zone. Pasang Stop Loss dan biarkan posisi berjalan sesuai rencana.",
+    "aiConfidenceScore": 89,
+    "aiQualityGrade": "A",
+    "riskGuidance": {
+      "lotSize": "Saran Lot: 0.01 - 0.02 Lot (Micro)",
+      "riskRupiah": "Rp 10.000 - Rp 20.000 (1-2% risiko dari modal Rp 1.000.000)",
+      "note": "Disiplin Risk Management: Jaga risiko per trade maksimal 1-2% modal."
+    },
+    "structureBreakdown": {
+      "mss": true,
+      "bos": false,
+      "fvg": true,
+      "liquiditySweep": true,
+      "orderBlock": true,
+      "supplyDemand": true
+    },
+    "hitPrices": {},
+    "history": [
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.701Z",
+        "price": 1.1522,
+        "note": "Signal BUY EUR/USD dipublikasikan pada area optimal entry 1.15082 - 1.15220."
+      },
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.701Z",
+        "price": 1.1522,
+        "note": "Harga berada di area optimal entry zone. Order aktif berjalan."
+      }
+    ]
+  },
+  "USDCHF": {
+    "id": "SIG-USDCHF-MSDBDF45",
+    "pairId": "USDCHF",
+    "pairName": "USD/CHF",
+    "category": "forex",
+    "type": "SELL",
+    "timeframe": "M5 / M15",
+    "entryMin": 0.8097,
+    "entryMax": 0.81068,
+    "entryAvg": 0.81019,
+    "stopLoss": 0.81148,
+    "takeProfit1": 0.80815,
+    "takeProfit2": 0.8066,
+    "riskReward": "1:2.78",
+    "status": "Running",
+    "createdAt": "2026-08-03T14:17:57.701Z",
+    "updatedAt": "2026-08-03T14:17:57.701Z",
+    "lockedUntil": "2026-08-03T14:37:57.701Z",
+    "strategyMethod": "M15 Trend Momentum & Dynamic Volatility Model",
+    "analysisReasoning": "✓ Genuine Bearish Market Structure Shift (MSS) detected from M5/M15 OHLC candles.\n✓ Real-time ATR (0.00027) used for dynamic risk modeling.\n✓ Price retesting Premium Supply Zone & Order Block (OB).\n✓ Dynamic ATR Volatility (0.00027) & RR (1:2.78) validated.",
+    "userAdvice": "Harga memasuki area entry zone. Pasang Stop Loss dan biarkan posisi berjalan sesuai rencana.",
+    "aiConfidenceScore": 80,
+    "aiQualityGrade": "B",
+    "riskGuidance": {
+      "lotSize": "Saran Lot: 0.01 - 0.02 Lot (Micro)",
+      "riskRupiah": "Rp 10.000 - Rp 20.000 (1-2% risiko dari modal Rp 1.000.000)",
+      "note": "Disiplin Risk Management: Jaga risiko per trade maksimal 1-2% modal."
+    },
+    "structureBreakdown": {
+      "mss": true,
+      "bos": false,
+      "fvg": false,
+      "liquiditySweep": true,
+      "orderBlock": true,
+      "supplyDemand": true
+    },
+    "hitPrices": {},
+    "history": [
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.701Z",
+        "price": 0.8097,
+        "note": "Signal SELL USD/CHF dipublikasikan pada area optimal entry 0.80970 - 0.81068."
+      },
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.701Z",
+        "price": 0.8097,
+        "note": "Harga berada di area optimal entry zone. Order aktif berjalan."
+      }
+    ]
+  },
+  "USDCAD": {
+    "id": "SIG-USDCAD-MSDBDF45",
+    "pairId": "USDCAD",
+    "pairName": "USD/CAD",
+    "category": "forex",
+    "type": "SELL",
+    "timeframe": "M5 / M15",
+    "entryMin": 1.404,
+    "entryMax": 1.40568,
+    "entryAvg": 1.40484,
+    "stopLoss": 1.40648,
+    "takeProfit1": 1.40203,
+    "takeProfit2": 1.40006,
+    "riskReward": "1:2.91",
+    "status": "Running",
+    "createdAt": "2026-08-03T14:17:57.701Z",
+    "updatedAt": "2026-08-03T14:17:57.701Z",
+    "lockedUntil": "2026-08-03T14:37:57.701Z",
+    "strategyMethod": "M15 Trend Momentum & Dynamic Volatility Model",
+    "analysisReasoning": "✓ Genuine Bearish Market Structure Shift (MSS) detected from M5/M15 OHLC candles.\n✓ Real-time ATR (0.00059) used for dynamic risk modeling.\n✓ Price retesting Premium Supply Zone & Order Block (OB).\n✓ Dynamic ATR Volatility (0.00059) & RR (1:2.91) validated.",
+    "userAdvice": "Harga memasuki area entry zone. Pasang Stop Loss dan biarkan posisi berjalan sesuai rencana.",
+    "aiConfidenceScore": 80,
+    "aiQualityGrade": "B",
+    "riskGuidance": {
+      "lotSize": "Saran Lot: 0.01 - 0.02 Lot (Micro)",
+      "riskRupiah": "Rp 10.000 - Rp 20.000 (1-2% risiko dari modal Rp 1.000.000)",
+      "note": "Disiplin Risk Management: Jaga risiko per trade maksimal 1-2% modal."
+    },
+    "structureBreakdown": {
+      "mss": true,
+      "bos": false,
+      "fvg": false,
+      "liquiditySweep": true,
+      "orderBlock": true,
+      "supplyDemand": true
+    },
+    "hitPrices": {},
+    "history": [
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.701Z",
+        "price": 1.404,
+        "note": "Signal SELL USD/CAD dipublikasikan pada area optimal entry 1.40400 - 1.40568."
+      },
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.701Z",
+        "price": 1.404,
+        "note": "Harga berada di area optimal entry zone. Order aktif berjalan."
+      }
+    ]
+  },
+  "GBPUSD": {
+    "id": "SIG-GBPUSD-MSDBDF45",
+    "pairId": "GBPUSD",
+    "pairName": "GBP/USD",
+    "category": "forex",
+    "type": "BUY",
+    "timeframe": "M5 / M15",
+    "entryMin": 1.34348,
+    "entryMax": 1.3451,
+    "entryAvg": 1.34429,
+    "stopLoss": 1.34248,
+    "takeProfit1": 1.34727,
+    "takeProfit2": 1.34944,
+    "riskReward": "1:2.85",
+    "status": "Running",
+    "createdAt": "2026-08-03T14:17:57.701Z",
+    "updatedAt": "2026-08-03T14:17:57.701Z",
+    "lockedUntil": "2026-08-03T14:37:57.701Z",
+    "strategyMethod": "M15 Break of Structure (BOS) + CHoCH Expansion",
+    "analysisReasoning": "✓ Genuine Market Structure Shift (MSS) detected from M5/M15 OHLC candles.\n✓ Real-time ATR (0.00017) used for dynamic risk modeling.\n✓ Price retesting Discount Order Block & Fair Value Gap (FVG).\n✓ Dynamic ATR Volatility (0.00017) & RR (1:2.85) validated.",
+    "userAdvice": "Harga memasuki area entry zone. Pasang Stop Loss dan biarkan posisi berjalan sesuai rencana.",
+    "aiConfidenceScore": 96,
+    "aiQualityGrade": "A+",
+    "riskGuidance": {
+      "lotSize": "Saran Lot: 0.01 - 0.02 Lot (Micro)",
+      "riskRupiah": "Rp 10.000 - Rp 20.000 (1-2% risiko dari modal Rp 1.000.000)",
+      "note": "Disiplin Risk Management: Jaga risiko per trade maksimal 1-2% modal."
+    },
+    "structureBreakdown": {
+      "mss": true,
+      "bos": true,
+      "fvg": true,
+      "liquiditySweep": true,
+      "orderBlock": true,
+      "supplyDemand": true
+    },
+    "hitPrices": {},
+    "history": [
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.701Z",
+        "price": 1.3451,
+        "note": "Signal BUY GBP/USD dipublikasikan pada area optimal entry 1.34348 - 1.34510."
+      },
+      {
+        "status": "Running",
+        "timestamp": "2026-08-03T14:17:57.701Z",
+        "price": 1.3451,
+        "note": "Harga berada di area optimal entry zone. Order aktif berjalan."
+      }
+    ]
+  }
+}
